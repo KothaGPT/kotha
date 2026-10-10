@@ -1,8 +1,11 @@
 package dialog
 
 import (
+	"sort"
+
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/kothagpt/kotha/internal/config"
 	"github.com/kothagpt/kotha/internal/tui/layout"
 	"github.com/kothagpt/kotha/internal/tui/styles"
 	"github.com/kothagpt/kotha/internal/tui/theme"
@@ -14,6 +17,8 @@ type McpServer struct {
 }
 
 type McpToggledMsg struct{ Name string }
+
+type ShowMcpDialogMsg struct{}
 
 type CloseMcpDialogMsg struct{}
 
@@ -95,4 +100,22 @@ func (c *mcpCmp) SetServers(servers []McpServer) {
 
 func NewMcpCmp() McpDialog {
 	return &mcpCmp{}
+}
+
+// BuildMcpEntries reads configured MCP servers and returns UI entries in stable order.
+func BuildMcpEntries() []McpServer {
+	cfg := config.Get()
+	if cfg == nil || len(cfg.MCPServers) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(cfg.MCPServers))
+	for name := range cfg.MCPServers {
+		keys = append(keys, name)
+	}
+	sort.Strings(keys)
+	servers := make([]McpServer, 0, len(keys))
+	for _, name := range keys {
+		servers = append(servers, McpServer{Name: name, Connected: true})
+	}
+	return servers
 }

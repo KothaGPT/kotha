@@ -51,7 +51,7 @@ type Result struct {
 // Ask sends a prompt and blocks until the agent finishes, returning the
 // final assistant message. Progress can be observed via WithEventCallback.
 func (c *Client) Ask(ctx context.Context, sessionID, prompt string, opts ...AskOption) (Result, error) {
-	if c.Agent == nil {
+	if c == nil || c.Agent == nil {
 		return Result{}, ErrNoAgent
 	}
 	var o AskOptions
@@ -95,7 +95,7 @@ func (c *Client) Ask(ctx context.Context, sessionID, prompt string, opts ...AskO
 // Stream starts a run and returns the raw event channel for custom
 // consumers. The caller owns draining the channel.
 func (c *Client) Stream(ctx context.Context, sessionID, prompt string, attachments ...message.Attachment) (<-chan agent.AgentEvent, error) {
-	if c.Agent == nil {
+	if c == nil || c.Agent == nil {
 		return nil, ErrNoAgent
 	}
 	return c.Agent.Run(ctx, sessionID, prompt, attachments...)
@@ -105,7 +105,7 @@ func (c *Client) Stream(ctx context.Context, sessionID, prompt string, attachmen
 // mirroring the HTTP POST /v1/sessions/{session_id}/ask/stream endpoint.
 // The caller owns draining the channel.
 func (c *Client) AskStream(ctx context.Context, sessionID, prompt string, opts ...AskOption) (<-chan agent.AgentEvent, error) {
-	if c.Agent == nil {
+	if c == nil || c.Agent == nil {
 		return nil, ErrNoAgent
 	}
 	var o AskOptions

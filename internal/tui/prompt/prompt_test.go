@@ -80,6 +80,19 @@ func TestMentionAndAutocomplete(t *testing.T) {
 	}
 }
 
+func TestSlashCompletion(t *testing.T) {
+	m := New("/tmp")
+	m.Workspace.AddFiles("src/main.go", "src/other.go")
+	m.Text = "look at /src/ma"
+	m.RefreshCandidates(10)
+	if !m.Completing || len(m.Candidates) == 0 {
+		t.Fatalf("no slash candidates: %+v", m)
+	}
+	if !m.AcceptCandidate() || m.Text != "look at /src/main.go " {
+		t.Fatalf("slash accept mismatch: %q", m.Text)
+	}
+}
+
 func TestMoveHelpers(t *testing.T) {
 	buf := []rune("hello world\nsecond")
 	if PrevWordStart(buf, 11) != 6 {

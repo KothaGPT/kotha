@@ -31,15 +31,34 @@ func (c Cwd) Resolve(mention string) string {
 	return filepath.Join(c.Dir, mention)
 }
 
-// Mention splits trailing "@partial" token from text for completion.
+// Mention splits a trailing "@partial" or "/partial" token from text for completion.
+// Slash-triggered completions are only recognized when the marker begins a token.
 func MentionToken(text string) (prefix, token string, ok bool) {
-	idx := strings.LastIndex(text, "@")
+	idx := trailingTokenStart(text)
 	if idx < 0 {
 		return text, "", false
 	}
-	// A space after @ closes the token.
+	// A space after the marker closes the token.
 	if tail := text[idx+1:]; strings.ContainsAny(tail, " \t\n") {
 		return text, "", false
 	}
 	return text[:idx], text[idx+1:], true
+}
+
+func trailingTokenStart(text string) int {
+	last := -1
+	for i := 0; i < len(text); i++ {
+		if text[i] != '@' && text[i] != '/' {
+			continue
+		}
+		if i > 0 && !isSpaceByte(text[i-1]) {
+			continue
+		}
+		last = i
+	}
+	return last
+}
+
+func isSpaceByte(b byte) bool {
+	return b == ' ' || b == '\t' || b == '\n' || b == '\r'
 }

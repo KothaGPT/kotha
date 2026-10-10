@@ -100,6 +100,9 @@ func TestNilServicesFailFast(t *testing.T) {
 	if err := c.Summarize(context.Background(), "x"); !errors.Is(err, ErrNoAgent) {
 		t.Fatalf("summarize err: %v", err)
 	}
+	if got := c.Model(); got != (models.Model{}) {
+		t.Fatalf("nil agent model = %+v", got)
+	}
 }
 
 func TestAskDrainsToFinal(t *testing.T) {

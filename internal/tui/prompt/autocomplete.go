@@ -39,7 +39,7 @@ func (a *Autocomplete) Complete(ix *Index, query string, limit int) []Candidate 
 	return out
 }
 
-// ApplyCompletion replaces the trailing @token in text with value.
+// ApplyCompletion replaces the trailing @token or /token in text with value.
 func ApplyCompletion(text, value string) string {
 	prefix, _, ok := MentionToken(text)
 	if !ok {
@@ -47,6 +47,10 @@ func ApplyCompletion(text, value string) string {
 	}
 	if !strings.HasSuffix(prefix, " ") && prefix != "" {
 		prefix += " "
+	}
+	marker := trailingTokenStart(text)
+	if marker >= 0 && text[marker] == '/' {
+		return prefix + "/" + value + " "
 	}
 	return prefix + "@" + value + " "
 }

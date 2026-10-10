@@ -33,6 +33,7 @@ type keyMap struct {
 	Commands        key.Binding
 	Filepicker      key.Binding
 	Models          key.Binding
+	MCP             key.Binding
 	SwitchTheme     key.Binding
 	ConnectProvider key.Binding
 }
@@ -74,6 +75,10 @@ var keys = keyMap{
 	Models: key.NewBinding(
 		key.WithKeys("ctrl+o"),
 		key.WithHelp("ctrl+o", "model selection"),
+	),
+	MCP: key.NewBinding(
+		key.WithKeys("ctrl+m"),
+		key.WithHelp("ctrl+m", "mcp servers"),
 	),
 
 	SwitchTheme: key.NewBinding(
@@ -131,6 +136,9 @@ type appModel struct {
 	showModelDialog bool
 	modelDialog     dialog.ModelDialog
 
+	showMcpDialog bool
+	mcpDialog     dialog.McpDialog
+
 	showInitDialog bool
 	initDialog     dialog.InitDialogCmp
 
@@ -166,6 +174,8 @@ func (a appModel) Init() tea.Cmd {
 	cmd = a.commandDialog.Init()
 	cmds = append(cmds, cmd)
 	cmd = a.modelDialog.Init()
+	cmds = append(cmds, cmd)
+	cmd = a.mcpDialog.Init()
 	cmds = append(cmds, cmd)
 	cmd = a.initDialog.Init()
 	cmds = append(cmds, cmd)
@@ -400,6 +410,22 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showModelDialog = false
 		return a, nil
 
+	case dialog.ShowMcpDialogMsg:
+		servers := dialog.BuildMcpEntries()
+		if len(servers) == 0 {
+			return a, util.ReportWarn("No MCP servers configured")
+		}
+		a.mcpDialog.SetServers(servers)
+		a.showMcpDialog = true
+		return a, nil
+
+	case dialog.McpToggledMsg:
+		return a, util.ReportInfo("MCP server toggled: " + msg.Name)
+
+	case dialog.CloseMcpDialogMsg:
+		a.showMcpDialog = false
+		return a, nil
+
 	case dialog.ModelSelectedMsg:
 		a.showModelDialog = false
 
@@ -507,6 +533,9 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if a.showCommandDialog {
 				a.showCommandDialog = false
 			}
+			if a.showMcpDialog {
+				a.showMcpDialog = false
+			}
 			if a.showFilepicker {
 				a.showFilepicker = false
 				a.filepicker.ToggleFilepicker(a.showFilepicker)
@@ -551,6 +580,21 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if a.currentPage == page.ChatPage && !a.showQuit && !a.showPermissions && !a.showSessionDialog && !a.showCommandDialog {
 				a.showModelDialog = true
+				return a, nil
+			}
+			return a, nil
+		case key.Matches(msg, keys.MCP):
+			if a.showMcpDialog {
+				a.showMcpDialog = false
+				return a, nil
+			}
+			if a.currentPage == page.ChatPage && !a.showQuit && !a.showPermissions && !a.showSessionDialog && !a.showCommandDialog && !a.showThemeDialog && !a.showProviderConnectDialog && !a.showModelDialog {
+				servers := dialog.BuildMcpEntries()
+				if len(servers) == 0 {
+					return a, util.ReportWarn("No MCP servers configured")
+				}
+				a.mcpDialog.SetServers(servers)
+				a.showMcpDialog = true
 				return a, nil
 			}
 			return a, nil
@@ -685,6 +729,15 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.modelDialog = d.(dialog.ModelDialog)
 		cmds = append(cmds, modelCmd)
 		// Only block key messages send all other messages down
+		if _, ok := msg.(tea.KeyMsg); ok {
+			return a, tea.Batch(cmds...)
+		}
+	}
+
+	if a.showMcpDialog {
+		d, mcpCmd := a.mcpDialog.Update(msg)
+		a.mcpDialog = d.(dialog.McpDialog)
+		cmds = append(cmds, mcpCmd)
 		if _, ok := msg.(tea.KeyMsg); ok {
 			return a, tea.Batch(cmds...)
 		}
@@ -900,6 +953,21 @@ func (a appModel) View() string {
 		)
 	}
 
+	if a.showMcpDialog {
+		overlay := a.mcpDialog.View()
+		row := lipgloss.Height(appView) / 2
+		row -= lipgloss.Height(overlay) / 2
+		col := lipgloss.Width(appView) / 2
+		col -= lipgloss.Width(overlay) / 2
+		appView = layout.PlaceOverlay(
+			col,
+			row,
+			overlay,
+			appView,
+			true,
+		)
+	}
+
 	if a.showCommandDialog {
 		overlay := a.commandDialog.View()
 		row := lipgloss.Height(appView) / 2
@@ -985,6 +1053,7 @@ func New(app *app.App) tea.Model {
 		sessionDialog:         dialog.NewSessionDialogCmp(),
 		commandDialog:         dialog.NewCommandDialogCmp(),
 		modelDialog:           dialog.NewModelDialogCmp(),
+		mcpDialog:             dialog.NewMcpCmp(),
 		permissions:           dialog.NewPermissionDialogCmp(),
 		initDialog:            dialog.NewInitDialogCmp(),
 		themeDialog:           dialog.NewThemeDialogCmp(),
@@ -1026,6 +1095,14 @@ If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (
 			return func() tea.Msg {
 				return startCompactSessionMsg{}
 			}
+		},
+	})
+	model.RegisterCommand(dialog.Command{
+		ID:          "mcp",
+		Title:       "MCP Servers",
+		Description: "Open the configured Model Context Protocol server list",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			return util.CmdHandler(dialog.ShowMcpDialogMsg{})
 		},
 	})
 	// Load custom commands

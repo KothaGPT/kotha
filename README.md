@@ -10,6 +10,7 @@ This repository contains the Go implementation of Kotha, including the terminal 
 - Non-interactive prompt execution for scripts and automation
 - Local project context awareness
 - LSP-backed coding support
+- MCP server configuration and management
 - HTTP server mode for remote or background usage
 - API subcommands for session management and requests
 - Multi-provider model support
@@ -36,6 +37,21 @@ This repository contains the Go implementation of Kotha, including the terminal 
 - Go 1.24+
 - A supported LLM provider configuration (for example OpenAI, Anthropic, Gemini, Groq, OpenRouter, Azure, Bedrock, or Vertex AI)
 - Optional: `gopls` or another LSP server for IDE-like functionality
+
+## MCP servers
+
+You can configure MCP servers in `.kotha.json` under `mcpServers`. Kotha will surface them in the TUI via the `ctrl+m` shortcut and the command palette.
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    }
+  }
+}
+```
 
 ## Installation
 
