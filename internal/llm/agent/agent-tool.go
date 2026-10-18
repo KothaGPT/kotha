@@ -111,10 +111,10 @@ func NewAgentTool(
 	logger logging.Logger,
 ) tools.BaseTool {
 	return &agentTool{
-		sessions:      Sessions,
-		messages:      Messages,
-		toolcalls:     Toolcalls,
-		lspClients:    LspClients,
+		sessions:       Sessions,
+		messages:       Messages,
+		toolcalls:      Toolcalls,
+		lspClients:     LspClients,
 		configProvider: configProvider,
 		logger:        logger,
 	}
